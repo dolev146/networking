@@ -25,11 +25,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <errno.h>
 
 #define PORT 3000
 #define SA struct sockaddr
 // Define the maximum length for the file contents
 #define MAX_FILE_LENGTH 1048576 // 1 MB in bytes
+
+int receive_int(int *num, int fd);
 
 int main()
 {
@@ -107,9 +110,9 @@ int main()
         printf("connected to the server..\n");
         char file_again;
         char exit_program;
-        int id1 = 1234;
-        int id2 = 5678;
-        int xor = id1 ^ id2;
+        uint32_t id1 = 1234;
+        uint32_t id2 = 5678;
+        uint32_t xor = id1 ^ id2;
 
         while (1)
         {
@@ -118,39 +121,39 @@ int main()
             int cubic = 1;
             setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, &cubic, sizeof(cubic));
 
-            // send the first part of the file
-            send(sockfd, first_part, first_part_size, 0);
+            // send the first part of the file like the way we did in reciever.c
+            while (first_part_size > 0)
+            {
+                send(sockfd, first_part, 1, 0);
+                first_part_size--;
+            }
 
             printf("First part sent \n");
             // TODO recieve the authentication from the receiver
             // we get the xor message from the receiver
 
-            int received_int = 0;
-            int return_status = read(sockfd, &received_int, sizeof(received_int));
-            if (return_status > 0)
+            
+            // init a int pointer
+            int *num = (int *)malloc(sizeof(int));
+            receive_int(num, sockfd);
+            printf("Received int = %d\n", *num);
+            if (*num != xor)
             {
-                fprintf(stdout, "Received int = %d\n", ntohl(received_int));
-                if (ntohl(received_int) != xor)
-                {
-                    printf("Authentication failed \n");
-                    break;
-                }
-            }
-            else
-            {
-                // Handling erros here
-                // exit the program
-                printf("Error receiving authentication \n");
+                printf("Authentication failed \n");
                 break;
             }
+
 
             // set the cc algorithm to reno with setsockopt
             int reno = 0;
             setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, &reno, sizeof(reno));
 
             // send the second part of the file
-
-            send(sockfd, second_part, second_part_size, 0);
+            while(second_part_size > 0)
+            {
+                send(sockfd, second_part, 1, 0);
+                second_part_size--;
+            }
 
             printf("Second part sent \n");
 
@@ -187,11 +190,43 @@ int main()
             file_again = 0;
         }
 
-        // close the socket
-        close(sockfd);
     }
     close(sockfd);
+    printf("Connection closed  on line 214\n");
     free(first_part);
+    printf("free first part on line 216\n");
     free(second_part);
+    printf("free second part on line 218\n");
+    return 0;
+}
+
+// https://stackoverflow.com/questions/9140409/transfer-integer-over-a-socket-in-c
+int receive_int(int *num, int fd)
+{
+    int32_t ret;
+    char *data = (char *)&ret;
+    int left = sizeof(ret);
+    int rc;
+    do
+    {
+        rc = read(fd, data, left);
+        if (rc <= 0)
+        { /* instead of ret */
+            if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+            {
+                // use select() or epoll() to wait for the socket to be readable again
+            }
+            else if (errno != EINTR)
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            data += rc;
+            left -= rc;
+        }
+    } while (left > 0);
+    *num = ntohl(ret);
     return 0;
 }
