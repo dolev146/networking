@@ -109,21 +109,29 @@ int main()
     {
         printf("connected to the server..\n");
         char file_again;
-        uint32_t id1 = 1234;
-        uint32_t id2 = 5678;
+        uint32_t id1 = 0700;
+        uint32_t id2 = 2093;
         uint32_t xor = id1 ^ id2;
 
         while (1)
         {
 
             // set the cc algorithm to cubic with setsockopt
-            int cubic = 1;
-            setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, &cubic, sizeof(cubic));
+            char *cc = "cubic";
+            if (setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc)) != 0)
+            {
+                printf("setsockopt failed \n");
+                return -1;
+            }
 
             // send the first part of the file like the way we did in reciever.c
             while (first_part_size > 0)
             {
-                send(sockfd, first_part, 1, 0);
+                if (send(sockfd, first_part, 1, 0) == -1)
+                {
+                    printf("Error sending data \n");
+                    return -1;
+                }
                 first_part_size--;
             }
 
@@ -131,7 +139,6 @@ int main()
             // TODO recieve the authentication from the receiver
             // we get the xor message from the receiver
 
-            
             // init a int pointer
             int *num = (int *)malloc(sizeof(int));
             receive_int(num, sockfd);
@@ -142,15 +149,25 @@ int main()
                 break;
             }
 
+            char *cc_algo = "reno"; // the CC algorithm to use (in this case, "reno")
 
             // set the cc algorithm to reno with setsockopt
-            int reno = 0;
-            setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, &reno, sizeof(reno));
+
+            int return_value = setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, cc_algo, strlen(cc_algo));
+            if (return_value == -1)
+            {
+                printf("Error setting the cc algorithm to reno \n");
+                break;
+            }
 
             // send the second part of the file
-            while(second_part_size > 0)
+            while (second_part_size > 0)
             {
-                send(sockfd, second_part, 1, 0);
+                if (send(sockfd, second_part, 1, 0) == -1)
+                {
+                    printf("Error sending the second part \n");
+                    break;
+                }
                 second_part_size--;
             }
 
@@ -167,7 +184,9 @@ int main()
                 // tell the receiver to send the file again
                 send(sockfd, "again", 5, 0);
                 continue;
-            }else{
+            }
+            else
+            {
                 // Send an exit message to the receiver.
                 // The receiver will close the connection and exit
                 send(sockfd, "exit", 4, 0);
@@ -193,7 +212,6 @@ int main()
             // exit_program = 0;
             file_again = 0;
         }
-
     }
     close(sockfd);
     printf("Connection closed  on line 214\n");
@@ -203,7 +221,28 @@ int main()
     printf("free second part on line 218\n");
     return 0;
 }
-
+void send_message_to_server(char *half_file, int socket_fd)
+{
+    int bytes_sent = send(socket_fd, half_file, MAX_FILE_LENGTH / 2, 0);
+    if (bytes_sent == -1)
+    {
+        printf("send() failed with error code : %d", errno);
+        close(socket_fd);
+        exit(1);
+    }
+    else if (bytes_sent == 0)
+    {
+        printf("peer has closed the TCP connection prior to send().\n");
+    }
+    else if (bytes_sent < MAX_FILE_LENGTH / 2)
+    {
+        printf("sent only %d bytes from the required %d.\n", MAX_FILE_LENGTH / 2, bytes_sent);
+    }
+    else
+    {
+        printf("message was successfully sent.\n");
+    }
+}
 // https://stackoverflow.com/questions/9140409/transfer-integer-over-a-socket-in-c
 int receive_int(int *num, int fd)
 {

@@ -16,7 +16,7 @@ void enqueue(long *time_in_micro_seconds, int *iteration_number, int *cubic_is_0
 long* dequeue();
 
 
-node_t *head;
-node_t *tail;
+extern node_t *head;
+extern node_t *tail;
 
 #endif // MYQUEUE_H_

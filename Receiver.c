@@ -82,8 +82,8 @@ void handle_connection(int client_socket, int server_socket)
 {
     // recieve the first part of the file                            // will use them to check the timing
 
-    uint32_t id1 = 1234;
-    uint32_t id2 = 5678;
+    uint32_t id1 = 0700;;
+    uint32_t id2 = 2093;
     uint32_t xor = id1 ^ id2;
     int iteration_number = 0;
 
@@ -109,7 +109,11 @@ void handle_connection(int client_socket, int server_socket)
 
         while (num_of_bytes < BUFSIZE / 2)
         {
-            recv(client_socket, client_message, 1, 0);
+            if(recv(client_socket, client_message, 1, 0) ==-1)
+            {
+                printf("recv failed \n");
+                break;
+            }
             num_of_bytes++;
         }
 
@@ -151,7 +155,11 @@ void handle_connection(int client_socket, int server_socket)
         // recive a file of half mega bytes
         while (num_of_bytes < BUFSIZE)
         {
-            recv(client_socket, client_message, 1, 0);
+            if(recv(client_socket, client_message, 1, 0) ==-1)
+            {
+                printf("recv failed \n");
+                break;
+            }
             num_of_bytes++;
         }
 
