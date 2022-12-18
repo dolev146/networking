@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
+#include "myqueue.h"
 
 // 3. Receive the first part of the file.
 // 4. Measure the time, it took to receive the first part.
@@ -33,6 +34,7 @@ char client_message[BUFSIZE];
 void handle_connection(int client_socket, int server_socket);
 int send_int(int num, int fd);
 int check(int exp, const char *msg);
+void print_report(int iteration_number);
 
 int main(int argc, char **argv)
 {
@@ -86,21 +88,23 @@ void handle_connection(int client_socket, int server_socket)
     uint32_t id1 = 1234;
     uint32_t id2 = 5678;
     uint32_t xor = id1 ^ id2;
+    int iteration_number = 0;
 
     int num_of_bytes = 0;
     while (1)
     {
+        iteration_number++;
 
         bzero(client_message, BUFSIZE);
 
         // set the algorithm to cubic
-        const char *cc = "cubic";
+        char *cc = "cubic";
         if (setsockopt(client_socket, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc)) != 0)
         {
             printf("setsockopt failed \n");
             return;
         }
-        printf("Congestion control algorithm changed to %s\n", cc);
+        printf("CC set to %s\n", cc);
 
         gettimeofday(&start_t_cubic, NULL); // start the time
 
@@ -115,10 +119,18 @@ void handle_connection(int client_socket, int server_socket)
         bzero(client_message, BUFSIZE);
         timersub(&end_t_cubic, &start_t_cubic, &tval_result_cubic); // the total time cubic
 
-        printf("Time elapsed: %ld.%06ld\n", (long int)tval_result_cubic.tv_sec, (long int)tval_result_cubic.tv_usec);
-        // store the time elapsed in a variable
-        long int time_elapsed_cubic = tval_result_cubic.tv_sec * 1000000 + tval_result_cubic.tv_usec;
-        printf("the time elapsed in micro seconds is %ld \n", time_elapsed_cubic);
+        long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
+        *time_elapsed_cubic = tval_result_cubic.tv_sec * 1000000 + tval_result_cubic.tv_usec;
+        int *iteration_number_p = (int *)malloc(sizeof(int));
+        *iteration_number_p = iteration_number;
+        int *cubic_param = (int *)malloc(sizeof(int));
+        *cubic_param = 0;
+        enqueue(time_elapsed_cubic, iteration_number_p, cubic_param);
+
+        printf("algo: cubic, time: %ld.%06ld, iter num: %d\n",
+               (long int)tval_result_cubic.tv_sec,
+               (long int)tval_result_cubic.tv_usec,
+               iteration_number);
 
         // 6. Send back the authentication to the sender.
         // send thhe xor to the client
@@ -128,11 +140,11 @@ void handle_connection(int client_socket, int server_socket)
         bzero(client_message, BUFSIZE);
 
         // change the algorithm to reno
-        const char *cc_algo = "reno"; // the CC algorithm to use (in this case, "reno")
+        char *cc_algo = "reno"; // the CC algorithm to use (in this case, "reno")
         check(setsockopt(server_socket, IPPROTO_TCP, TCP_CONGESTION, cc_algo, strlen(cc_algo)),
               "setsockopt failed");
 
-        printf("Congestion control algorithm changed to %s\n", cc_algo);
+        printf("CC set to %s\n", cc_algo);
 
         // recive the second part of the file
         gettimeofday(&start_t_reno, NULL); // start the time
@@ -144,16 +156,17 @@ void handle_connection(int client_socket, int server_socket)
             num_of_bytes++;
         }
 
-        gettimeofday(&end_t_reno, NULL); // finish count for first part of the file
+        gettimeofday(&end_t_reno, NULL);                         // finish count for first part of the file
         timersub(&end_t_reno, &start_t_reno, &tval_result_reno); // the total time reno
-        printf("Time elapsed: %ld.%06ld\n", (long int)tval_result_reno.tv_sec, (long int)tval_result_reno.tv_usec);
+        printf("algo: reno, time: %ld.%06ld, iter num: %d\n", (long int)tval_result_reno.tv_sec, (long int)tval_result_reno.tv_usec, iteration_number);
         // store the time elapsed in a variable
         long int time_elapsed_reno = tval_result_reno.tv_sec * 1000000 + tval_result_reno.tv_usec;
-        printf("the time elapsed in micro seconds is %ld \n", time_elapsed_reno);
+        long int *time_elapsed_reno_p = (long int *)malloc(sizeof(long int));
+        *time_elapsed_reno_p = time_elapsed_reno;
+        int *reno_param = (int *)malloc(sizeof(int));
+        *reno_param = 1;
+        enqueue(time_elapsed_reno_p, iteration_number_p, reno_param);
 
-        // calculate the average time
-        long int average_time = (time_elapsed_cubic + time_elapsed_reno) / 2;
-        
         // if you get the exit message from the client, close the socket and exit
         recv(client_socket, client_message, 1024, 0);
         // if the client send the message "again" the server will recive the file again
@@ -161,19 +174,52 @@ void handle_connection(int client_socket, int server_socket)
         {
             continue;
         }
-
-        if (strcmp(client_message, "exit") == 0)
+        else
         {
-            // print out the times
-            printf("the time of the cubic is %ld micro seconds\n", time_elapsed_cubic);
-            printf("the time of the reno is %ld micro seconds\n", time_elapsed_reno);
-            printf("the average time is: %ld micro seconds\n", average_time);
-            
+            // print out the report
+            printf("#######################\n");
+            printf("#######################\n");
+            printf("the report is \n");
+            print_report(iteration_number);
             close(client_socket);
             printf("closing client socket \n");
             return;
         }
     }
+}
+
+void print_report(int number_of_iterations)
+{
+    long int avg_cubic = 0;
+    long int avg_reno = 0;
+    long int avg_total = 0;
+
+    // dequeue the queue and print out the report
+    while (head != NULL)
+    {
+        if (
+            // compare the head->cubic_is_0_reno_is_1 to 0 but remember that it is a pointer
+            // so you need to dereference it
+            *head->cubic_is_0_reno_is_1 == 0
+
+        )
+        {
+            avg_cubic += *head->time_in_micro_seconds;
+        }
+        else if (*head->cubic_is_0_reno_is_1 == 1)
+        {
+            avg_reno += *head->time_in_micro_seconds;
+        }
+        avg_total += *head->time_in_micro_seconds;
+        dequeue();
+    }
+
+    printf("-----------------------\n");
+    printf("-----------------------\n");
+    printf("the number of iterations is %d \n", number_of_iterations);
+    printf("the average time for cubic is %ld \n", avg_cubic / number_of_iterations);
+    printf("the average time for reno is %ld \n", avg_reno / number_of_iterations);
+    printf("the average time for total is %ld \n", avg_total / number_of_iterations);
 }
 
 // https://stackoverflow.com/questions/361363/how-to-measure-time-in-milliseconds-using-ansi-c
