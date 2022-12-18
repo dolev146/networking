@@ -109,7 +109,6 @@ int main()
     {
         printf("connected to the server..\n");
         char file_again;
-        char exit_program;
         uint32_t id1 = 1234;
         uint32_t id2 = 5678;
         uint32_t xor = id1 ^ id2;
@@ -168,25 +167,30 @@ int main()
                 // tell the receiver to send the file again
                 send(sockfd, "again", 5, 0);
                 continue;
-            }
-
-            // prompt the user what to do: "Exit? (y/n)" and wait for the user's input
-            // if the user enters 'y', break the loop
-            // if the user enters 'n', continue the loop
-            printf("Exit? (y/n): ");
-
-            scanf(" %c", &exit_program);
-            if (exit_program == 'y')
-            {
+            }else{
                 // Send an exit message to the receiver.
                 // The receiver will close the connection and exit
                 send(sockfd, "exit", 4, 0);
                 break;
             }
 
+            // // prompt the user what to do: "Exit? (y/n)" and wait for the user's input
+            // // if the user enters 'y', break the loop
+            // // if the user enters 'n', continue the loop
+            // printf("Exit? (y/n): ");
+
+            // scanf(" %c", &exit_program);
+            // if (exit_program == 'y')
+            // {
+            //     // Send an exit message to the receiver.
+            //     // The receiver will close the connection and exit
+            //     send(sockfd, "exit", 4, 0);
+            //     break;
+            // }
+
             // just send continue to the receiver
-            send(sockfd, "continue", 8, 0);
-            exit_program = 0;
+            // send(sockfd, "continue", 8, 0);
+            // exit_program = 0;
             file_again = 0;
         }
 
