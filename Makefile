@@ -1,13 +1,13 @@
 all:myqueue Receiver Sender
 
 Receiver: 
-	gcc -o Receiver Receiver.c myqueue.o -Wall -g -O0
+	gcc -o Receiver Receiver.c myqueue.o -Wall -g 
 
 Sender: 
-	gcc -o Sender Sender.c -Wall -g -O0
+	gcc -o Sender Sender.c -Wall -g 
 
 myqueue: 
-	gcc myqueue.c -c -Wall -g -O0
+	gcc myqueue.c -c -Wall -g 
 
 clean:
 	rm -f Receiver Sender
