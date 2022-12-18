@@ -91,11 +91,9 @@ void handle_connection(int client_socket, int server_socket)
     while (1)
     {
         struct timeval start_t_cubic, end_t_cubic, tval_result_cubic; // will use them to check the timing
-
         struct timeval start_t_reno, end_t_reno, tval_result_reno; // will use them to check the timing
 
         iteration_number++;
-
         bzero(client_message, BUFSIZE);
 
         // set the algorithm to cubic
@@ -119,8 +117,6 @@ void handle_connection(int client_socket, int server_socket)
 
         bzero(client_message, BUFSIZE);
         timersub(&end_t_cubic, &start_t_cubic, &tval_result_cubic); // the total time cubic
-
-        
 
         long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
         *time_elapsed_cubic = tval_result_cubic.tv_sec * 1000000 + tval_result_cubic.tv_usec;
@@ -224,6 +220,10 @@ void print_report(int number_of_iterations)
     printf("the average time for cubic is %ld \n", avg_cubic / number_of_iterations);
     printf("the average time for reno is %ld \n", avg_reno / number_of_iterations);
     printf("the average time for total is %ld \n", avg_total / number_of_dequeue);
+}
+
+void print_time()
+{
 }
 
 // https://stackoverflow.com/questions/361363/how-to-measure-time-in-milliseconds-using-ansi-c
