@@ -34,7 +34,7 @@ char client_message[BUFSIZE];
 void handle_connection(int client_socket, int server_socket);
 int send_int(int num, int fd);
 int check(int exp, const char *msg);
-void print_report(int iteration_number);
+void print_report(int number_of_iterations);
 
 int main(int argc, char **argv)
 {
@@ -81,9 +81,6 @@ int check(int exp, const char *msg)
 void handle_connection(int client_socket, int server_socket)
 {
     // recieve the first part of the file                            // will use them to check the timing
-    struct timeval start_t_cubic, end_t_cubic, tval_result_cubic; // will use them to check the timing
-
-    struct timeval start_t_reno, end_t_reno, tval_result_reno; // will use them to check the timing
 
     uint32_t id1 = 1234;
     uint32_t id2 = 5678;
@@ -93,6 +90,10 @@ void handle_connection(int client_socket, int server_socket)
     int num_of_bytes = 0;
     while (1)
     {
+        struct timeval start_t_cubic, end_t_cubic, tval_result_cubic; // will use them to check the timing
+
+        struct timeval start_t_reno, end_t_reno, tval_result_reno; // will use them to check the timing
+
         iteration_number++;
 
         bzero(client_message, BUFSIZE);
@@ -118,6 +119,8 @@ void handle_connection(int client_socket, int server_socket)
 
         bzero(client_message, BUFSIZE);
         timersub(&end_t_cubic, &start_t_cubic, &tval_result_cubic); // the total time cubic
+
+        
 
         long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
         *time_elapsed_cubic = tval_result_cubic.tv_sec * 1000000 + tval_result_cubic.tv_usec;
@@ -193,6 +196,7 @@ void print_report(int number_of_iterations)
     long int avg_cubic = 0;
     long int avg_reno = 0;
     long int avg_total = 0;
+    long int number_of_dequeue = 0;
 
     // dequeue the queue and print out the report
     while (head != NULL)
@@ -212,14 +216,14 @@ void print_report(int number_of_iterations)
         }
         avg_total += *head->time_in_micro_seconds;
         dequeue();
+        number_of_dequeue++;
     }
 
     printf("-----------------------\n");
     printf("-----------------------\n");
-    printf("the number of iterations is %d \n", number_of_iterations);
     printf("the average time for cubic is %ld \n", avg_cubic / number_of_iterations);
     printf("the average time for reno is %ld \n", avg_reno / number_of_iterations);
-    printf("the average time for total is %ld \n", avg_total / number_of_iterations);
+    printf("the average time for total is %ld \n", avg_total / number_of_dequeue);
 }
 
 // https://stackoverflow.com/questions/361363/how-to-measure-time-in-milliseconds-using-ansi-c
