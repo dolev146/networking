@@ -82,16 +82,17 @@ void handle_connection(int client_socket, int server_socket)
 {
     // recieve the first part of the file                            // will use them to check the timing
 
-    uint32_t id1 = 0700;;
+    uint32_t id1 = 0700;
+    ;
     uint32_t id2 = 2093;
     uint32_t xor = id1 ^ id2;
     int iteration_number = 0;
 
     int num_of_bytes = 0;
-    while (1)
+    for (;;)
     {
         struct timeval start_t_cubic, end_t_cubic, tval_result_cubic; // will use them to check the timing
-        struct timeval start_t_reno, end_t_reno, tval_result_reno; // will use them to check the timing
+        struct timeval start_t_reno, end_t_reno, tval_result_reno;    // will use them to check the timing
 
         iteration_number++;
         bzero(client_message, BUFSIZE);
@@ -109,16 +110,17 @@ void handle_connection(int client_socket, int server_socket)
 
         while (num_of_bytes < BUFSIZE / 2)
         {
-            if(recv(client_socket, client_message, 1, 0) ==-1)
+            if (recv(client_socket, client_message, 1, 0) == -1)
             {
                 printf("recv failed \n");
                 break;
             }
             num_of_bytes++;
         }
-
+        usleep(1000);
         gettimeofday(&end_t_cubic, NULL); // finish count for first part of the file
 
+     
         bzero(client_message, BUFSIZE);
         timersub(&end_t_cubic, &start_t_cubic, &tval_result_cubic); // the total time cubic
 
@@ -155,14 +157,14 @@ void handle_connection(int client_socket, int server_socket)
         // recive a file of half mega bytes
         while (num_of_bytes < BUFSIZE)
         {
-            if(recv(client_socket, client_message, 1, 0) ==-1)
+            if (recv(client_socket, client_message, 1, 0) == -1)
             {
                 printf("recv failed \n");
                 break;
             }
             num_of_bytes++;
         }
-
+        usleep(1000);
         gettimeofday(&end_t_reno, NULL);                         // finish count for first part of the file
         timersub(&end_t_reno, &start_t_reno, &tval_result_reno); // the total time reno
         printf("algo: reno, time: %ld.%06ld, iter num: %d\n", (long int)tval_result_reno.tv_sec, (long int)tval_result_reno.tv_usec, iteration_number);

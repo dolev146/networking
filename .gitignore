@@ -1,3 +1,7 @@
 Receiver
 Sender 
 .vscode/settings.json
+*.o
+
+myqueue.o
+Receiver.o
