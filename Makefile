@@ -1,7 +1,7 @@
-all:myqueue Receiver Sender server
+all:myqueue mystack Receiver Sender server 
 
 server:
-	gcc -o Receiver Receiver.o myqueue.o -Wall 	
+	gcc -o Receiver Receiver.o myqueue.o mystack.o -Wall 	
 
 Receiver:
 	gcc Receiver.c -c -Wall 
@@ -15,3 +15,5 @@ myqueue:
 clean:
 	rm -f *.o Sender Receiver
 
+mystack:
+	gcc mystack.c -c -Wall

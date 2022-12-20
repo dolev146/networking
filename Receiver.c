@@ -17,6 +17,7 @@
 #include <time.h>
 #include <errno.h>
 #include "myqueue.h"
+#include "mystack.h"
 
 // 3. Receive the first part of the file.
 // 4. Measure the time, it took to receive the first part.
@@ -130,7 +131,7 @@ void handle_connection(int client_socket, int server_socket)
         *iteration_number_p = iteration_number;
         int *cubic_param = (int *)malloc(sizeof(int));
         *cubic_param = 0;
-        enqueue(time_elapsed_cubic, iteration_number_p, cubic_param);
+        push(time_elapsed_cubic, iteration_number_p, cubic_param);
 
         printf("algo: cubic, time: %ld.%06ld, iter num: %d\n",
                (long int)tval_result_cubic.tv_sec,
@@ -174,7 +175,7 @@ void handle_connection(int client_socket, int server_socket)
         *time_elapsed_reno_p = time_elapsed_reno;
         int *reno_param = (int *)malloc(sizeof(int));
         *reno_param = 1;
-        enqueue(time_elapsed_reno_p, iteration_number_p, reno_param);
+        push(time_elapsed_reno_p, iteration_number_p, reno_param);
 
         // if you get the exit message from the client, close the socket and exit
         recv(client_socket, client_message, 1024, 0);
@@ -221,7 +222,7 @@ void print_report(int number_of_iterations)
             avg_reno += *head->time_in_micro_seconds;
         }
         avg_total += *head->time_in_micro_seconds;
-        dequeue();
+        pop();
         number_of_dequeue++;
     }
 
