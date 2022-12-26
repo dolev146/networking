@@ -3,8 +3,9 @@ Sender
 .vscode/settings.json
 *.o
 
-
+orelHapustema
 
 myqueue.o
 Receiver.o
 fuckyou
+orelHaustema
