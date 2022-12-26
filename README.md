@@ -17,7 +17,6 @@ Insert gif or link to demo
 ## Documentation
 
 [Documentation](https://linktodocumentation)
- ![image](https://user-images.githubusercontent.com/62290677/209576919-c7539b28-07af-4810-b06a-c5fbbbddbd3b.png)
 
 
 ## Features
